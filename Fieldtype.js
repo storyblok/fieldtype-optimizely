@@ -8,7 +8,7 @@ const Fieldtype = {
 <div v-if="experiments.length > 0">
   <select v-model="model.experiment" class="uk-width-1-1">
     <option></option>
-    <option v-for="experiment in experiments" :value="experiment.id">{{ experiment.name }}</option>
+    <option v-for="experiment in experiments" :value="experiment.key">{{ experiment.name }}</option>
   </select>
 </div>
 <div v-if="variations.length > 0" class="uk-margin-top">
@@ -45,7 +45,7 @@ const Fieldtype = {
   computed: {
     variations() {
       return (this.experiments.filter((e) => {
-        return e.id == this.model.experiment
+        return e.key == this.model.experiment
       })[0] || {variations: []}).variations
     }
   },
