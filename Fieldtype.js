@@ -2,8 +2,26 @@ const Fieldtype = {
   mixins: [window.Storyblok.plugin],
   template: `<div>
 {{ errorMessage }}
-<div v-if="loading">Loading audiences...</div>
-<div class="options" v-if="selectOptions.length > 0">
+<div v-if="loading">Loading...</div>
+<div v-if="!loading && !errorMessage">
+<div class="uk-form-label">Experiment</div>
+<div v-if="experiments.length > 0">
+  <select v-model="model.experiment" class="uk-width-1-1">
+    <option></option>
+    <option v-for="experiment in experiments" :value="experiment.id">{{ experiment.name }}</option>
+  </select>
+</div>
+<div v-if="variations.length > 0" class="uk-margin-top">
+<div class="uk-form-label">Variation</div>
+<select v-model="model.variation" class="uk-width-1-1">
+  <option></option>
+  <option v-for="variation in variations" :value="variation.key">{{ variation.name }}</option>
+</select>
+</div>
+<div class="uk-margin-top uk-margin-bottom">
+<a @click="showSegments = !showSegments">Show segments</a>
+</div>
+<div class="options" v-if="selectOptions.length > 0 && showSegments">
   <label v-for="segment in selectOptions">
     <div class="uk-flex uk-flex-middle">
       <input type="checkbox" :value="segment.id" :key="segment.id" v-model="model.segments" />
@@ -13,12 +31,22 @@ const Fieldtype = {
     </div>
   </label>
 </div>
+</div>
 </div>`,
   data() {
     return {
       selectOptions: [],
+      experiments: [],
       errorMessage: '',
+      showSegments: false,
       loading: false
+    }
+  },
+  computed: {
+    variations() {
+      return (this.experiments.filter((e) => {
+        return e.id == this.model.experiment
+      })[0] || {variations: []}).variations
     }
   },
   methods: {
@@ -38,7 +66,7 @@ const Fieldtype = {
           success(JSON.parse(response), xhr)
         } else {
           if (typeof error === 'function') {
-            error('Please check your token and projectId', xhr)
+            error('Please configure your token and projectId in the field type settings', xhr)
           }
         }
       }
@@ -56,7 +84,9 @@ const Fieldtype = {
     initWith() {
       return {
         plugin: 'optimizely',
-        segments: []
+        segments: [],
+        variation: null,
+        experiment: null
       }
     },
     pluginCreated() {
@@ -66,8 +96,15 @@ const Fieldtype = {
         var audiences = response.filter(function (item) {
           return !item.archived
         })
-        this.loading = false
         this.selectOptions = audiences
+
+        this.getAjax('https://api.optimizely.com/v2/experiments?project_id=' + this.options.projectId, this.options.token, (response) => {
+          this.experiments = response
+          this.loading = false
+        }, (error) => {
+          this.loading = false
+          this.errorMessage = error
+        })
       }, (error) => {
         this.loading = false
         this.errorMessage = error
