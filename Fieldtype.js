@@ -100,18 +100,20 @@ const Fieldtype = {
 
         this.getAjax('https://api.optimizely.com/v2/experiments?project_id=' + this.options.projectId, this.options.token, (response) => {
           this.experiments = response.map(experiment => {
-            // use `key` for the legacy full-stack experimentation
-            // use `id` for the modern version
-            experiment._id = experiment.key || experiment.id
-
-            experiment.variations = (experiment.variations || []).map(variation => {
+            return {
+              ...experiment,
               // use `key` for the legacy full-stack experimentation
-              // use `variation_id` for the modern version
-              variation._id = variation.key || variation.variation_id
-              return variation
-            })
-
-            return experiment
+              // use `id` for the modern version
+              _id: experiment.key || experiment.id,
+              variations: (experiment.variations || []).map(variation => {
+                return {
+                  ...variation,
+                  // use `key` for the legacy full-stack experimentation
+                  // use `variation_id` for the modern version
+                  _id: variation.key || variation.variation_id
+                }
+              })
+            }
           })
           this.loading = false
         }, (error) => {
