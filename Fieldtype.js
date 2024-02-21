@@ -8,14 +8,14 @@ const Fieldtype = {
 <div v-if="experiments.length > 0">
   <select v-model="model.experiment" class="uk-width-1-1">
     <option></option>
-    <option v-for="experiment in experiments" :value="experiment._id">{{ experiment.name }}</option>
+    <option v-for="experiment in experiments" :value="experiment.key">{{ experiment.name }}</option>
   </select>
 </div>
 <div v-if="variations.length > 0" class="uk-margin-top">
 <div class="uk-form-label">Variation</div>
 <select v-model="model.variation" class="uk-width-1-1">
   <option></option>
-  <option v-for="variation in variations" :value="variation._id">{{ variation.name }}</option>
+  <option v-for="variation in variations" :value="variation.key">{{ variation.name }}</option>
 </select>
 </div>
 <div class="uk-margin-top uk-margin-bottom">
@@ -45,7 +45,7 @@ const Fieldtype = {
   computed: {
     variations() {
       return (this.experiments.filter((e) => {
-        return e._id == this.model.experiment
+        return e.key == this.model.experiment
       })[0] || {variations: []}).variations
     }
   },
@@ -99,22 +99,7 @@ const Fieldtype = {
         this.selectOptions = audiences
 
         this.getAjax('https://api.optimizely.com/v2/experiments?project_id=' + this.options.projectId, this.options.token, (response) => {
-          this.experiments = response.map(experiment => {
-            return {
-              ...experiment,
-              // use `key` for the legacy full-stack experimentation
-              // use `id` for the modern version
-              _id: experiment.key || experiment.id,
-              variations: (experiment.variations || []).map(variation => {
-                return {
-                  ...variation,
-                  // use `key` for the legacy full-stack experimentation
-                  // use `variation_id` for the modern version
-                  _id: variation.key || variation.variation_id
-                }
-              })
-            }
-          })
+          this.experiments = response
           this.loading = false
         }, (error) => {
           this.loading = false
